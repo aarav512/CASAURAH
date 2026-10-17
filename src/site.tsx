@@ -69,7 +69,7 @@ export function Site() {
         <div className="wrap foot">
           <div>
             <p className="brand-line">Saurabh Bansal & Associates</p>
-            <p>Chartered accountants · New Delhi</p>
+            <p>Chartered accountants · <PlaceLink /></p>
           </div>
           <div>
             <p>Street address, telephone, and email are withheld until the firm confirms them.</p>
@@ -82,6 +82,19 @@ export function Site() {
         </div>
       </footer>
     </>
+  )
+}
+
+function PlaceLink() {
+  return (
+    <a className="map-link" href="https://www.google.com/maps/search/?api=1&query=New%20Delhi" target="_blank" rel="noopener noreferrer">
+      New Delhi
+      <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+        <path d="M8 1.6a4 4 0 0 0-4 4c0 3 4 8.2 4 8.2s4-5.2 4-8.2a4 4 0 0 0-4-4z" fill="none" stroke="currentColor" strokeWidth="1.2" />
+        <circle cx="8" cy="5.6" r="1.15" fill="currentColor" />
+      </svg>
+      <span className="sr"> Opens Google Maps in a new tab.</span>
+    </a>
   )
 }
 
@@ -352,7 +365,7 @@ export function Contact() {
         </div>
         <aside className="location">
           <p className="eyebrow">Location</p>
-          <h2>New Delhi</h2>
+          <h2><PlaceLink /></h2>
           <p>The street address is not shown. Public listings for this firm name do not agree, and the domain associated with one listing did not open a confirmed office page. Publish an address only after the firm confirms it.</p>
           <p>No email address or telephone number is invented on this site.</p>
         </aside>
