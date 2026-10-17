@@ -33,10 +33,6 @@ h1, h2, h3 { font-family: var(--serif); font-weight: 500; letter-spacing: -0.03e
 :focus-visible { outline: 2px solid var(--brass); outline-offset: 3px; }
 
 .wrap { width: min(var(--max), calc(100% - 2.5rem)); margin-inline: auto; }
-.preview-bar {
-  margin: 0; background: var(--navy); color: #efe6d4; text-align: center;
-  font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; padding: 0.45rem 1rem;
-}
 .site-header { position: sticky; top: 0; z-index: 4; background: rgba(243, 238, 228, 0.94); border-bottom: 1px solid var(--line); }
 .bar { display: flex; align-items: center; justify-content: space-between; min-height: 4.4rem; gap: 1rem; }
 .brand { display: flex; gap: 0.75rem; align-items: center; text-decoration: none; }
@@ -50,8 +46,9 @@ h1, h2, h3 { font-family: var(--serif); font-weight: 500; letter-spacing: -0.03e
 .site-header nav { display: flex; align-items: center; gap: 1.35rem; }
 .site-header nav a { text-decoration: none; font-size: 0.95rem; }
 .site-header nav a.active { color: var(--green); }
-.portal-link { border-bottom: 1px solid var(--brass); padding-bottom: 0.1rem; }
 .nav-toggle { display: none; background: transparent; border: 1px solid var(--line); padding: 0.4rem 0.7rem; }
+.foot-portal { margin: 0; font-size: 0.88rem; }
+.foot-portal a { color: var(--muted); }
 
 .hero { display: grid; grid-template-columns: 1.08fr 0.92fr; gap: 3.5rem; align-items: end; padding: 3.2rem 0 4rem; }
 .eyebrow { color: var(--green); letter-spacing: 0.14em; text-transform: uppercase; font-size: 0.75rem; margin-bottom: 0.8rem; }
@@ -171,6 +168,7 @@ h1, h2, h3 { font-family: var(--serif); font-weight: 500; letter-spacing: -0.03e
 .inline-form { grid-template-columns: 1fr; }
 .narrow { max-width: 34rem; }
 .upload { display: grid; gap: 0.5rem; margin-top: 0.6rem; }
+.upload progress { width: 100%; height: 0.4rem; accent-color: var(--green); }
 .timeline { list-style: none; margin: 0; padding: 0; }
 .timeline li { display: grid; grid-template-columns: 8rem 1fr auto; gap: 0.8rem; border-top: 1px solid var(--line); padding: 0.75rem 0; }
 .empty { color: var(--muted); border: 1px dashed var(--line); padding: 0.8rem; }

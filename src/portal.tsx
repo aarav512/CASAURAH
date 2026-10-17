@@ -6,7 +6,7 @@ export function Gate({ role, children }: { role: 'client' | 'admin'; children: R
   const api = usePortal()
   if (!api.ready) return <p className="wait">Loading the record…</p>
   if (api.mode === 'closed') return <Closed />
-  if (!api.user) return <Navigate to="/login" replace />
+  if (!api.user) return role === 'client' ? <Login /> : <Navigate to="/login" replace />
   if (api.user.role !== role) return <Navigate to={api.user.role === 'admin' ? '/admin' : '/portal'} replace />
   return <Frame>{children}</Frame>
 }
@@ -248,25 +248,42 @@ export function ClientHome() {
 function Upload({ itemId, onDone }: { itemId: string; onDone: (message: string) => void }) {
   const api = usePortal()
   const [error, setError] = useState('')
+  const [note, setNote] = useState('')
+  const [picked, setPicked] = useState('')
+  const [progress, setProgress] = useState<number | null>(null)
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const input = event.currentTarget.elements.namedItem('file') as HTMLInputElement
     const file = input.files?.[0]
+    setNote('')
     if (!file) { setError('Choose a file.'); return }
-    const result = await api.addFile(itemId, file)
-    if (!result.ok) { setError(result.error); return }
     setError('')
-    onDone(result.detail ?? 'Recorded.')
+    setProgress(0)
+    const result = await api.addFile(itemId, file, (percent) => setProgress(percent))
+    if (!result.ok) { setProgress(null); setError(result.error); return }
+    setProgress(100)
+    await new Promise((resolve) => setTimeout(resolve, 160))
+    setProgress(null)
+    setNote(result.detail ?? 'Uploaded.')
+    onDone(result.detail ?? 'Uploaded.')
+    setPicked('')
     event.currentTarget.reset()
   }
   return (
     <form className="upload" onSubmit={submit}>
       <label htmlFor={`file-${itemId}`}>File, PDF JPEG PNG CSV or XLSX, up to 10 MB
-        <input id={`file-${itemId}`} name="file" type="file" accept=".pdf,.jpg,.jpeg,.png,.csv,.xlsx,application/pdf,image/jpeg,image/png,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+        <input id={`file-${itemId}`} name="file" type="file" accept=".pdf,.jpg,.jpeg,.png,.csv,.xlsx,application/pdf,image/jpeg,image/png,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onChange={(event) => setPicked(event.target.files?.[0]?.name ?? '')} />
       </label>
-      <button className="btn btn-navy" type="submit">Record file</button>
+      {picked ? <p className="fine">Selected: {picked}</p> : null}
+      {progress !== null ? (
+        <label className="fine">Uploading {progress}%
+          <progress value={progress} max={100}>{progress}%</progress>
+        </label>
+      ) : null}
+      <button className="btn btn-navy" type="submit" disabled={progress !== null}>Upload</button>
       {error ? <p className="field-error" role="alert">{error}</p> : null}
-      <p className="fine">{api.mode === 'demo' ? 'The file is checked, then discarded. Only the name, type, and size stay in this browser.' : 'The file goes to a private bucket. It is not given a public link.'}</p>
+      {note ? <p className="form-ok" role="status">{note}</p> : null}
+      <p className="fine">{api.mode === 'demo' ? 'Demonstration only. The file is checked here and is not stored on a server.' : 'The file goes to a private bucket. It is not given a public link.'}</p>
     </form>
   )
 }

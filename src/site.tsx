@@ -1,7 +1,6 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import { Link, NavLink, Outlet, useLocation, useParams } from 'react-router-dom'
 import { articles, legal, services } from './content'
-import { usePortal } from './store'
 
 const titles: Record<string, string> = {
   '/': 'Saurabh Bansal & Associates',
@@ -16,7 +15,6 @@ const titles: Record<string, string> = {
 export function Site() {
   const { pathname } = useLocation()
   const [open, setOpen] = useState(false)
-  const portal = usePortal()
 
   useEffect(() => {
     if (titles[pathname]) document.title = titles[pathname]
@@ -41,12 +39,9 @@ export function Site() {
     return () => window.removeEventListener('keydown', onKey)
   }, [open])
 
-  const portalTo = portal.user ? (portal.user.role === 'admin' ? '/admin' : '/portal') : '/login'
-
   return (
     <>
       <a className="skip" href="#content">Skip to content</a>
-      <p className="preview-bar">Firm preview. Draft copy for approval. Not a client circular.</p>
       <header className="site-header">
         <div className="wrap bar">
           <Link className="brand" to="/">
@@ -64,7 +59,6 @@ export function Site() {
             <NavLink to="/services">Services</NavLink>
             <NavLink to="/insights">Insights</NavLink>
             <NavLink to="/contact">Contact</NavLink>
-            <NavLink className="portal-link" to={portalTo}>{portal.user ? 'Open portal' : 'Client portal'}</NavLink>
           </nav>
         </div>
       </header>
@@ -83,7 +77,7 @@ export function Site() {
           </div>
           <div>
             <p>Developed by Kynex Code.</p>
-            <p>The client portal on this preview is a demonstration.</p>
+            <p className="foot-portal"><Link to="/portal">Client Portal</Link></p>
           </div>
         </div>
       </footer>
@@ -121,7 +115,7 @@ export function Home() {
         <div>
           <p className="eyebrow">Chartered accountants · New Delhi</p>
           <h1>A clear record for accounts, tax, and compliance.</h1>
-          <p className="lede">Saurabh Bansal & Associates is a chartered accountancy practice in New Delhi. This preview sets out proposed areas of work, and a private portal where a client can see what is asked for, what has been received, and where the work stands.</p>
+          <p className="lede">Saurabh Bansal & Associates is a chartered accountancy practice in New Delhi. This site sets out proposed areas of work for accounts, tax, and compliance.</p>
           <div className="hero-actions">
             <Link className="btn btn-navy" to="/services">Proposed services</Link>
             <Link className="btn btn-line" to="/contact">Send an enquiry</Link>

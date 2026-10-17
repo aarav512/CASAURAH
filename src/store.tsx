@@ -34,7 +34,7 @@ export type Api = {
   createItem: (input: { clientId: string; kind: Item['kind']; title: string; detail: string }) => Promise<Result>
   setStatus: (id: string, status: Status) => Promise<Result>
   addNote: (clientId: string, body: string, itemId?: string) => Promise<Result>
-  addFile: (itemId: string, file: File) => Promise<Result>
+  addFile: (itemId: string, file: File, onProgress?: (percent: number) => void) => Promise<Result>
   updateProfile: (input: { name: string; org: string }) => Promise<Result>
   reset: () => Promise<Result>
 }
@@ -278,22 +278,27 @@ function useDemo(on: boolean): Api {
       })
       return ok('Internal note saved. The client does not see it.')
     },
-    async addFile(itemId, file) {
+    async addFile(itemId, file, onProgress) {
       if (user?.role !== 'client') return fail('Sign in as the client to record a file.')
       const problem = checkFile(file)
       if (problem) return fail(problem)
       const item = db.items.find((i) => i.id === itemId && i.clientId === user.id)
       if (!item || item.kind !== 'document') return fail('This item does not take a file.')
       if (item.status !== 'requested' && item.status !== 'submitted') return fail('The firm is not asking for a file on this item.')
+      onProgress?.(35)
+      await new Promise((resolve) => setTimeout(resolve, 120))
+      onProgress?.(75)
+      await new Promise((resolve) => setTimeout(resolve, 120))
       const at = new Date().toISOString()
       const rec: FileRec = { id: nid(), itemId, clientId: user.id, name: file.name, size: file.size, mime: file.type || MIME[file.name.split('.').pop()!.toLowerCase()], at }
       save({
         ...db,
         files: [rec, ...db.files],
         items: db.items.map((i) => (i.id === itemId && i.status === 'requested' ? { ...i, status: 'submitted', updatedAt: at } : i)),
-        notes: [{ id: nid(), clientId: user.id, itemId, actor: user.name, body: `${file.name} was checked and discarded. Only the name, type, and size were kept.`, internal: false, at }, ...db.notes],
+        notes: [{ id: nid(), clientId: user.id, itemId, actor: user.name, body: `${file.name} was checked in this browser and discarded. It was not stored.`, internal: false, at }, ...db.notes],
       })
-      return ok('Recorded in this browser only. The file was not uploaded.')
+      onProgress?.(100)
+      return ok('Demonstration only. The file was not sent to Supabase or any server.')
     },
     async updateProfile(input) {
       if (!user || user.role !== 'client') return fail('Sign in as the client to edit the profile.')
@@ -322,6 +327,29 @@ async function supabase() {
     client = createClient(url, key, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } })
   }
   return client
+}
+
+async function uploadPrivate(sb: SupabaseClient, path: string, file: File, onProgress?: (percent: number) => void): Promise<{ ok: true } | { ok: false; error: string }> {
+  const url = import.meta.env.VITE_SUPABASE_URL?.trim().replace(/\/$/, '')
+  const key = publishable(import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY)
+  const session = await sb.auth.getSession()
+  const token = session.data.session?.access_token
+  if (!url || !key || !token) return { ok: false, error: 'Upload is not configured.' }
+  const encoded = path.split('/').map(encodeURIComponent).join('/')
+  return new Promise((resolve) => {
+    const xhr = new XMLHttpRequest()
+    xhr.open('POST', `${url}/storage/v1/object/client-documents/${encoded}`)
+    xhr.setRequestHeader('apikey', key)
+    xhr.setRequestHeader('Authorization', `Bearer ${token}`)
+    xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream')
+    xhr.setRequestHeader('x-upsert', 'false')
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) onProgress?.(Math.round((event.loaded / event.total) * 100))
+    }
+    xhr.onload = () => resolve(xhr.status >= 200 && xhr.status < 300 ? { ok: true } : { ok: false, error: 'The file was not accepted.' })
+    xhr.onerror = () => resolve({ ok: false, error: 'The file was not accepted.' })
+    xhr.send(file)
+  })
 }
 
 type Row = Record<string, unknown>
@@ -478,7 +506,7 @@ function useRemote(on: boolean): Api {
       await pull(user)
       return ok('Internal note saved.')
     },
-    async addFile(itemId, file) {
+    async addFile(itemId, file, onProgress) {
       if (!user || user.role !== 'client') return fail('Sign in as the client to record a file.')
       const problem = checkFile(file)
       if (problem) return fail(problem)
@@ -490,8 +518,8 @@ function useRemote(on: boolean): Api {
       if (!sb) return fail('Upload is not configured.')
       const safe = file.name.replace(/[^\w.\-]+/g, '_').slice(0, 80)
       const path = `${user.id}/${itemId}/${crypto.randomUUID()}-${safe}`
-      const uploaded = await sb.storage.from('client-documents').upload(path, file, { contentType: file.type || undefined, upsert: false })
-      if (uploaded.error) return fail('The file was not accepted.')
+      const uploaded = await uploadPrivate(sb, path, file, onProgress)
+      if (!uploaded.ok) return fail(uploaded.error)
       const inserted = await sb.from('documents').insert({
         work_item_id: itemId,
         client_id: user.id,
@@ -505,7 +533,7 @@ function useRemote(on: boolean): Api {
         return fail('The file record could not be saved.')
       }
       await pull(user)
-      return ok('Uploaded to private storage. There is no public link.')
+      return ok('Sent to the configured storage bucket. This screen does not publish a link.')
     },
     async updateProfile(input) {
       if (!user) return fail('Sign in to edit the profile.')
